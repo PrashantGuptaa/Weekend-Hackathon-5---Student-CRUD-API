@@ -9,94 +9,125 @@ app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 // your code goes here
-let doc = require("./InitialData");
-let idProp = doc.length;
 
-app.get("/api/student", (req, res) => {
-    res.send(doc);
-});
+let studentArray =require("./InitialData.js");
 
-app.get('/api/student/:id', (req, res) => {
-    let id = req.params.id;
-    for(let obj in doc){
-        if(doc[obj]["id"] === parseInt(id)){
-            res.send(doc[obj]);
-            return;
-        }
-    }
-    res.status(404).send("id is invalid");
+app.get('/api/student',(req,res)=>{
+    res.send(studentArray);
     return;
-});
-
-app.post("/api/student", (req, res) => {
-//     res.set("content-type", "application/x-www-form-urlencoded");
-    const newStudent = req.body;
-    if(!newStudent.name || !newStudent.currentClass || !newStudent.division){
-        res.sendStatus(400);
-        return;
-    }
-
-    doc.push({
-        id: idProp+1,
-        name: newStudent.name,
-        currentClass: parseInt(newStudent.currentClass),
-        division: newStudent.division
-    });
-
-    idProp++;
-    
-    res.send({
-        id: idProp
-    });
-});
-
-app.put("/api/student/:id", (req, res) => {
-    const id = parseInt(req.params.id);
-    if(isNaN(id)){
-        res.sendStatus(400);
-        return;
-    }
-    
-    const index = doc.findIndex(student => student.id === id);
-    
-    if(index === -1){
-        res.sendStatus(400);
-        return;
-    }
-    
-    const student = doc[index];
-    if(req.body.name){
-        doc[index].name=req.body.name;
-    }
-    if(request.body.currentClass){
-        doc[index].currentClass=parseInt(req.body.currentClass);
-    }
-    if(request.body.division){
-        doc[index].division=req.body.division;
-    }
-    res.set("content-type", "application/x-www-form-urlencoded");
-    res.send( {name:req.body.name});
-});
-
-app.delete("/api/student/:id", (req, res) => {
-    let id = req.params.id;
-    let flag = false;
-    let index = null;
-    for(let obj in doc){
-        if(doc[obj]["id"] === parseInt(id)){
-            flag = true;
-            index = obj;
-        }
-    }
-    if(!flag){
-        res.status(404).send("invalid id");
-        return;
-    }
-    doc.splice(index, 1);
-    res.send(doc);
 })
 
+app.get("/api/student/:id",(req,res)=>{
+    let flag=false;
+    studentArray.forEach((student)=>{
+        if(+student.id===+req.params.id){
+            res.send(student);
+            flag=true;
+            return;
+        }
+    })
+    if(!flag){
+        res.status(404).send("Student not found");
+        return;
+    }
+});
+
+let index=8;
+
+app.post("/api/student",(req,res)=>{
+    if(req.body.name===undefined || req.body.division===undefined || req.body.currentClass===undefined){
+        res.status(400).send("Incomplete data");
+        return;
+    }
+    else{
+        studentArray=[...studentArray,{"id":index,"name":req.body.name,"currentClass":Number(req.body.currentClass),"division":req.body.division}];
+        res.json({'id':index});
+        index++;
+        return;
+    }
+})
+
+
+app.put("/api/student/:id",(req,res)=>{
+    let count=0;
+    let flag=false;
+    studentArray.forEach((student)=>{
+        if(+student.id===+req.params.id){
+            flag=true;
+            return;
+        }
+    })
+    if(!flag){
+        res.status(400).send("Student not found");
+        return;
+    }
+    let found = false;
+    let validKey = ["name","currentClass","division"];
+    for(let i =0; i<Object.keys(req.body).length; i++){
+        found = validKey.includes(Object.keys(req.body)[i]);
+    }
+    if(!found){
+        res.status(400).send("invalid keys");
+        return;
+    }
+    if(req.body.name===undefined){
+        count++;
+    }
+    else{
+        studentArray.forEach((student)=>{
+            if(+student.id===+req.params.id){
+                student.name=req.body.name;
+            }
+        });
+    }
+    if(req.body.currentClass===undefined){
+        count++;
+    }
+    else{
+        studentArray.forEach((student)=>{
+            if(+student.id===+req.params.id){
+                student.currentClass=Number(req.body.currentClass);
+            }
+        });
+    }
+    if(req.body.division===undefined){
+        count++;
+    }
+    else{
+        studentArray.forEach((student)=>{
+            if(+student.id===+req.params.id){
+                student.division=req.body.division;
+            }
+        });
+    }
+    if(count!==3){
+        res.send("updated");
+        return;
+    }
+    else{
+        res.status(400).send("no update");
+        return;
+    }
+})
+
+
+app.delete("/api/student/:id",(req,res)=>{
+    let flag=false;
+    studentArray.forEach((student,index)=>{
+        if(+student.id===+req.params.id){
+            flag=true;
+            studentArray.splice(index,1);
+        }
+    })
+    if(flag){
+        res.send("deleted");
+        return;
+    }
+    else{
+        res.status(404).send("student not found");
+        return;
+    }    
+})
 app.listen(port, () => console.log(`App listening on port ${port}!`))
 
-
-module.exports = app;   
+module.exports = app; 
