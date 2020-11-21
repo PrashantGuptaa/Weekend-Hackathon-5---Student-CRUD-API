@@ -40,7 +40,7 @@ app.post("/api/student",(req,res) => {
     }
     intialId++;
     studentArray.push(newStudent);
-    res.send(newStudent);
+    res.send(studentArray);
 })
 
 app.put("/api/student/:id",(req,res) => {
@@ -50,22 +50,27 @@ app.put("/api/student/:id",(req,res) => {
         res.status(400).send("Invalid Id");
         return;
     }
-    let name  = req.body.name;
-    if(!name || !isNaN(name)){
-        res.status(400).send("Invalid Update");
-        return;
+    
+    if(req.body.name){
+        studentDet.name=req.body.name;
     }
+    if(request.body.currentClass){
+        studentDet.currentClass=parseInt(req.body.currentClass);
+    }
+    if(request.body.division){
+        studentDet.division=req.body.division;
+    } 
    
-    studentDet.name = name;
 
-    res.send(studentDet);
+    res.send(studentDet.name);
 })
+
 
 app.delete("/api/student/:id",(req,res)=>{
     const id = req.params.id;
     const studentDetIndex = studentArray.findIndex((student) => student.id === parseInt(id));
     console.log(studentDetIndex);
-    if(!studentDetIndex){
+    if(studentDetIndex === -1){
         res.status(404).send("Invalid Id");
         return;
     }
