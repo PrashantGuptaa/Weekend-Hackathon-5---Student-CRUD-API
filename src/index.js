@@ -3,86 +3,100 @@ const app = express()
 const bodyParser = require("body-parser");
 const port = 8080
 app.use(express.urlencoded());
-let studentArray = require('./InitialData');
 
 // Parse JSON bodies (as sent by API clients)
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 // your code goes here
+let doc = require("./InitialData");
+let idProp = doc.length;
 
-let intialId = studentArray.length + 1;
-app.get("/api/student",(req,res) => {
-    res.send(studentArray);
-})
-
-app.get("/api/student/:id",(req,res) => {
-    const id = req.params.id;
-    const studentDet = studentArray.find((student) => student.id === parseInt(id));
-    if(!studentDet){
-        res.status(404).send("Invalid Id");
-        return;
-    }
-    res.send(studentDet);
+app.get("/api/student", (req, res) => {
+    res.send(doc);
 });
 
-app.post("/api/student",(req,res) => {
-    let {name , currentClass, division } = req.body;
-    if(!name || !currentClass || !division){
-        res.status(400).send("Incomplete Information");
+app.get('/api/student/:id', (req, res) => {
+    let id = req.params.id;
+    for(let obj in doc){
+        if(doc[obj]["id"] === parseInt(id)){
+            res.send(doc[obj]);
+            return;
+        }
+    }
+    res.status(404).send("id is invalid");
+    return;
+});
+
+app.post("/api/student", (req, res) => {
+//     res.set("content-type", "application/x-www-form-urlencoded");
+    const newStudent = req.body;
+    if(!newStudent.name || !newStudent.currentClass || !newStudent.division){
+        res.sendStatus(400);
         return;
     }
-    const newStudent = {
-        id: intialId,
-        name,
-        currentClass,
-        division
-    }
-    intialId++;
-    studentArray.push(newStudent);
-    res.send(studentArray);
-})
 
-app.put("/api/student/:id",(req,res) => {
-    const id = req.params.id;
-    const studentDet = studentArray.find((student) => student.id === parseInt(id));
-    if(!studentDet){
-        res.status(400).send("Invalid Id");
+    doc.push({
+        id: idProp+1,
+        name: newStudent.name,
+        currentClass: parseInt(newStudent.currentClass),
+        division: newStudent.division
+    });
+
+    idProp++;
+    
+    res.send({
+        id: idProp
+    });
+});
+
+app.put("/api/student/:id", (req, res) => {
+    const id = parseInt(req.params.id);
+    if(isNaN(id)){
+        res.sendStatus(400);
         return;
     }
     
+    const index = doc.findIndex(student => student.id === id);
+    
+    if(index === -1){
+        res.sendStatus(400);
+        return;
+    }
+    
+    const student = doc[index];
     if(req.body.name){
-        studentDet.name=req.body.name;
+        doc[index].name=req.body.name;
     }
     if(request.body.currentClass){
-        studentDet.currentClass=parseInt(req.body.currentClass);
+        doc[index].currentClass=parseInt(req.body.currentClass);
     }
     if(request.body.division){
-        studentDet.division=req.body.division;
-    } 
-   
+        doc[index].division=req.body.division;
+    }
+    res.set("content-type", "application/x-www-form-urlencoded");
+    res.send( {name:req.body.name});
+});
 
-    res.send(studentDet.name);
-})
-
-
-app.delete("/api/student/:id",(req,res)=>{
-    const id = req.params.id;
-    const studentDetIndex = studentArray.findIndex((student) => student.id === parseInt(id));
-    console.log(studentDetIndex);
-    if(studentDetIndex === -1){
-        res.status(404).send("Invalid Id");
+app.delete("/api/student/:id", (req, res) => {
+    let id = req.params.id;
+    let flag = false;
+    let index = null;
+    for(let obj in doc){
+        if(doc[obj]["id"] === parseInt(id)){
+            flag = true;
+            index = obj;
+        }
+    }
+    if(!flag){
+        res.status(404).send("invalid id");
         return;
     }
-   // studentArray[studentDetIndex].delete;
-    for(let i = studentDetIndex ; i < studentArray.length ; i++){
-        studentArray[i] = studentArray[i + 1];
-    }
-    studentArray.pop();
-    res.send(studentArray);
-    
+    doc.splice(index, 1);
+    res.send(doc);
 })
 
 app.listen(port, () => console.log(`App listening on port ${port}!`))
+
 
 module.exports = app;   
